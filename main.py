@@ -21,11 +21,12 @@ def get_db_connection():
     """Create and return PostgreSQL Connection"""
     
     return psycopg2.connect(
-        host=os.getenv("PGHOST", "localhost"),
-        port=os.getenv("PGPORT", "5432"),
-        database=os.getenv("PGDATABASE", "expense_tracker"),
-        user=os.getenv("PGUSER", "postgres"),
-        password=os.getenv("PGPASSWORD")
+        host=os.getenv("PGHOST"),
+        port=os.getenv("PGPORT"),
+        database=os.getenv("PGDATABASE"),
+        user=os.getenv("PGUSER"),
+        password=os.getenv("PGPASSWORD"),
+        sslmode = os.getenv("PGSSLMODE","require")
     )
     
 # --------------------------------------------------
@@ -175,5 +176,3 @@ def categories():
 if __name__=="__main__":
     mcp.run(transport='http',host="0.0.0.0",port=8000)
                 
-                
-               
