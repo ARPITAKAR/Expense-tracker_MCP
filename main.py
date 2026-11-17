@@ -162,7 +162,7 @@ def summarize(
 # --------------------------------------------------
 
 @mcp.tool()
-async def edit_expense(
+def edit_expense(
     expense_id: int,
     date: str = None,
     amount: float = None,
