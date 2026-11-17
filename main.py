@@ -161,73 +161,57 @@ def summarize(
 # 7. Edit Expense Tool
 # --------------------------------------------------
 
+# --------------------------------------------------
+# 8. Edit Expense Tool
+# --------------------------------------------------
+
 @mcp.tool()
 def edit_expense(
     expense_id: int,
-    date: str = None,
-    amount: float = None,
-    category: str = None,
-    subcategory: str = None,
-    note: str = None
+    date: str,
+    amount: float,
+    category: str,
+    subcategory: str = "",
+    note: str = ""
 ):
     """Update an existing expense using its ID."""
 
-    async with pool.acquire() as conn:
+    with get_db_connection() as conn:
+        with conn.cursor() as curr:
 
-        # Store fields which need to be updated
-        updates = []
-        params = []
+            curr.execute(
+                """
+                UPDATE expenses
+                SET date = %s,
+                    amount = %s,
+                    category = %s,
+                    subcategory = %s,
+                    note = %s
+                WHERE id = %s
+                RETURNING id
+                """,
+                (
+                    date,
+                    amount,
+                    category,
+                    subcategory,
+                    note,
+                    expense_id
+                )
+            )
 
-        if date is not None:
-            updates.append(f"date = ${len(params) + 1}")
-            params.append(date)
+            updated_id = curr.fetchone()
 
-        if amount is not None:
-            updates.append(f"amount = ${len(params) + 1}")
-            params.append(amount)
+            if updated_id is None:
+                return {
+                    "status": "error",
+                    "message": f"Expense ID {expense_id} not found"
+                }
 
-        if category is not None:
-            updates.append(f"category = ${len(params) + 1}")
-            params.append(category)
-
-        if subcategory is not None:
-            updates.append(f"subcategory = ${len(params) + 1}")
-            params.append(subcategory)
-
-        if note is not None:
-            updates.append(f"note = ${len(params) + 1}")
-            params.append(note)
-
-        # Check whether user provided any field to update
-        if not updates:
             return {
-                "status": "error",
-                "message": "No fields provided for update."
-            }
-
-        # Add expense ID as the final parameter
-        params.append(expense_id)
-
-        query = f"""
-            UPDATE expenses
-            SET {", ".join(updates)}
-            WHERE id = ${len(params)}
-            RETURNING id;
-        """
-
-        updated_id = await conn.fetchval(query, *params)
-
-        if updated_id is None:
-            return {
-                "status": "error",
-                "message": f"Expense ID {expense_id} not found."
-            }
-
-        return {
-            "status": "ok",
-            "id": updated_id,
-            "message": "Expense updated successfully."
-        }            
+                "status": "ok",
+                "id": updated_id[0]
+            }        
 # --------------------------------------------------
 # 8. Categories Resource
 # --------------------------------------------------
