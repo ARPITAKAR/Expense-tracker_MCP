@@ -157,9 +157,79 @@ def summarize(
                 }
                 for row in rows
             ]
-            
 # --------------------------------------------------
-# 7. Categories Resource
+# 7. Edit Expense Tool
+# --------------------------------------------------
+
+@mcp.tool()
+async def edit_expense(
+    expense_id: int,
+    date: str = None,
+    amount: float = None,
+    category: str = None,
+    subcategory: str = None,
+    note: str = None
+):
+    """Update an existing expense using its ID."""
+
+    async with pool.acquire() as conn:
+
+        # Store fields which need to be updated
+        updates = []
+        params = []
+
+        if date is not None:
+            updates.append(f"date = ${len(params) + 1}")
+            params.append(date)
+
+        if amount is not None:
+            updates.append(f"amount = ${len(params) + 1}")
+            params.append(amount)
+
+        if category is not None:
+            updates.append(f"category = ${len(params) + 1}")
+            params.append(category)
+
+        if subcategory is not None:
+            updates.append(f"subcategory = ${len(params) + 1}")
+            params.append(subcategory)
+
+        if note is not None:
+            updates.append(f"note = ${len(params) + 1}")
+            params.append(note)
+
+        # Check whether user provided any field to update
+        if not updates:
+            return {
+                "status": "error",
+                "message": "No fields provided for update."
+            }
+
+        # Add expense ID as the final parameter
+        params.append(expense_id)
+
+        query = f"""
+            UPDATE expenses
+            SET {", ".join(updates)}
+            WHERE id = ${len(params)}
+            RETURNING id;
+        """
+
+        updated_id = await conn.fetchval(query, *params)
+
+        if updated_id is None:
+            return {
+                "status": "error",
+                "message": f"Expense ID {expense_id} not found."
+            }
+
+        return {
+            "status": "ok",
+            "id": updated_id,
+            "message": "Expense updated successfully."
+        }            
+# --------------------------------------------------
+# 8. Categories Resource
 # --------------------------------------------------
 
 @mcp.resource(
